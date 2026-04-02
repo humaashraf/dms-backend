@@ -40,7 +40,8 @@ public function index()
         ]);
 
         $permission = Permission::create([
-            'name' => $request->name
+            'name' => $request->name,
+            'guard_name' => 'web'
         ]);
 
         return response()->json([
@@ -53,7 +54,8 @@ public function index()
     // Show Single Permission
     public function edit($id)
     {
-        $permission = Permission::with(['roles', 'users'])->find($id);
+        // $permission = Permission::with(['roles', 'users'])->find($id);
+        $permission = Permission::with('roles')->find($id);
 
         if (!$permission) {
             return response()->json([

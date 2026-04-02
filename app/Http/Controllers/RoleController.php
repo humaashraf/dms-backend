@@ -32,45 +32,29 @@ class RoleController extends Controller
             'permissions' => $permissions
         ], 200);
     }
+    public function store(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|unique:roles,name',
+            'permissions' => 'nullable|array'
+        ]);
 
-    // Store New Role
-    // public function store(Request $request)
-    // {
-    //     $request->validate([
-    //         'name' => 'required|string|unique:roles,name',
-    //         'permissions' => 'nullable|array'
-    //     ]);
+        $role = Role::create([
+            'name' => $request->name,
+            'guard_name' => 'web',
 
-    //     $role = Role::create(['name' => $request->name]);
-    //     if ($request->has('permissions')) {
-    //         $role->syncPermissions($request->permissions);
-    //     }
+        ]);
 
-    //     return response()->json([
-    //         'status' => true,
-    //         'message' => 'Role created successfully',
-    //         'data' => $role->load('permissions')
-    //     ], 201);
-    // }
-public function store(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|unique:roles,name',
-        'permissions' => 'nullable|array'
-    ]);
+        if ($request->has('permissions')) {
+            $role->syncPermissions($request->permissions); // Permissions as array
+        }
 
-    $role = Role::create(['name' => $request->name]);
-
-    if ($request->has('permissions')) {
-        $role->syncPermissions($request->permissions); // ✅ Permissions as array
+        return response()->json([
+            'status' => true,
+            'message' => 'Role created successfully',
+            'data' => $role->load('permissions')
+        ], 201);
     }
-
-    return response()->json([
-        'status' => true,
-        'message' => 'Role created successfully',
-        'data' => $role->load('permissions')
-    ], 201);
-}
 
 
 
@@ -123,7 +107,10 @@ public function store(Request $request)
         ]);
 
         $role = Role::findOrFail($id);
-        $role->update(['name' => $request->name]);
+        $role->update([
+            'name' => $request->name,
+            'guard_name' => 'web',
+        ]);
 
         if ($request->has('permissions')) {
             $role->syncPermissions($request->permissions);
@@ -140,6 +127,7 @@ public function store(Request $request)
     public function destroy($id)
     {
         $role = Role::find($id);
+
         if (!$role) {
             return response()->json([
                 'status' => false,
@@ -147,6 +135,10 @@ public function store(Request $request)
             ], 404);
         }
 
+        // Only detach permissions (safe)
+        $role->permissions()->detach();
+
+        // DELETE role
         $role->delete();
 
         return response()->json([
